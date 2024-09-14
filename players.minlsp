@@ -1,13 +1,30 @@
+(def {check-expect a b} {
+    (print (eq? a b))
+})
+
+(def {second lst} {
+    (first (rest lst))
+})
+
+(def {third lst} {
+    (first (rest (rest lst)))
+})
+
+(def {fourth lst} {
+    (first (rest (rest (rest lst))))
+})
+
 (def {card-value card} {
-    (if {(and (int car) (eq? card 2)) 100}
+    (if {(and (int card) (eq? card 2)) 100}
         {(int card) card}
-        {(eq? card "Jack") 11}
-        {(eq? card "Queen") 12}
-        {(eq? card "King") 13}
-        {(eq? card "Ace") 14}
-        {(eq? card "Black") 200}
+        {(eq? card 'Jack) 11}
+        {(eq? card 'Queen) 12}
+        {(eq? card 'King) 13}
+        {(eq? card 'Ace) 14}
+        {(eq? card 'Black) 200}
         {else  300})
 })
+
 
 (def {card=? card1 card2} {
     (eq? (card-value card1) (card-value card2))
@@ -30,18 +47,19 @@
 })
 
 (def {insert-card card hand} {
-    (if {(empty? hand) (cons card empty?)}
+    (if {(empty? hand) (cons card empty)}
         {(card<? card (first hand)) (cons card hand)}
         {else (cons (first hand) (insert-card card (rest hand)))})
 })
 
 (def {sort-cards loc} {
-    (if {(empty? loc) empty?}
+    (if {(empty? loc) empty}
         {else (insert-card (first loc) (sort-cards (rest loc)))})
 })
 
 (def {remove-one-of-each hand} {
-    (if {(or (empty? hand) (empty? (rest hand))) empty?}
+    (if {(empty? hand) empty}
+        {(empty? (rest hand)) empty}
         {(not (card=? (first hand) (first ( rest hand)))) (remove-one-of-each (rest hand))}
         {else (cons (first hand) (remove-one-of-each (rest hand)))})
 })
@@ -52,8 +70,9 @@
 })
 
 (def {dedup-hand hand} {
-    (if {(or (empty? hand) (empty? (rest hand))) hand}
-        {(card=? (first hand) (first (rest hand))) (dedup-hand (rest hand))}
+    (if {(empty? hand) hand}
+        {(empty? (rest hand)) hand}
+        {(card=? (first hand) (second hand)) (dedup-hand (rest hand))}
         {else (cons (first hand) (dedup-hand (rest hand)))})
 })
 
@@ -62,7 +81,7 @@
 })
 
 (def {make-solos hand} {
-    (if {(empty? hand) empty?}
+    (if {(empty? hand) empty}
         {else (cons (list (first hand)) (make-solos (rest hand)))})
 })
 
@@ -71,7 +90,7 @@
 })
 
 (def {make-pairs lst} {
-    (if {(empty? lst) empty?}
+    (if {(empty? lst) empty}
         {else (cons (list (first lst) (first lst)) (make-pairs (rest lst)))})
 })
 
@@ -80,7 +99,7 @@
 })
 
 (def {make-trios lst} {
-    (if {(empty? lst) empty?}
+    (if {(empty? lst) empty}
         {else (cons (list (first lst) (first lst) (first lst)) (make-trios (rest lst)))})
 })
 
@@ -89,16 +108,15 @@
 })
 
 (def {rocket? hand} {
-    (and (eq? (length hand) 2)
-         (card=? (first hand) "Black")
-         (card=? (first (rest hand)) "Red"))
+    (if {(eq? (length hand) 2) (and (card=? (first hand) 'Black) (card=? (second hand) 'Red))}
+        {else 0})
 })
 
 (def {bomb? hand} {
-    (and (eq? (length hand) 4)
-         (card=? (first hand) (first (rest hand)))
-         (card=? (first hand) (first (rest (rest hand))))
-         (card=? (first hand) (first (rest (rest (rest hand))))))
+    (if {(eq? (length hand) 4) (and (card=? (first hand) (second hand))
+                                    (card=? (first hand) (third hand))
+                                    (card=? (first hand) (fourth hand)))}
+        {else 0})
 })
 
 (def {hand-elementwise<? a b} {
@@ -108,6 +126,8 @@
         {(card>? (first a) (first b)) 0}
         {else (hand-elementwise<? (rest a) (rest b))})
 })
+
+;(print (hand-elementwise<? {'King} {'Ace}))
 
 (def {hand<? a b} {
     (if {(rocket? a) 0}
@@ -119,14 +139,14 @@
 })
 
 (def {insert-hands hand hands} {
-    (if {(empty hands) (cons hand empty)}
+    (if {(empty? hands) (cons hand empty)}
         {(hand<? hand (first hands)) (cons hand hands)}
-        {(hand<? (first hands) hand) ((cons (first hands) (insert-hands hand (rest hands))))}
+        {(hand<? (first hands) hand) (cons (first hands) (insert-hands hand (rest hands)))}
         {else hands})
 })
 
 (def {sort-hands unsorted-hands} {
-    (if {(empty unsorted-hands) empty}
+    (if {(empty? unsorted-hands) empty}
         {else (insert-hands (first unsorted-hands) (sort-hands (rest unsorted-hands)))})
 })
 
@@ -135,15 +155,15 @@
 })
 
 (def {straight? hand} {
-    (if {(empty hand) 1}
+    (if {(empty? hand) 1}
         {(> (card-value (first hand)) (card-value 'Ace)) 1}
-        {(empty (rest hand)) 1}
-        {(card-follows? (first hand) (first ( rest hand))) (straight? (rest hand))}
+        {(empty? (rest hand)) 1}
+        {(card-follows? (first hand) (second hand)) (straight? (rest hand))}
         {else 0})
 })
 
 (def {filter-straights n hands} {
-    (if {(empty hands) empty}
+    (if {(empty? hands) empty}
     {(and (<= n (length (first hands))) (straight? (first hands)))
      (cons (first hands) (filter-straights n (rest hands)))}
     {else (filter-straights n (rest hands))})
@@ -151,13 +171,13 @@
 
 (def {first-n n lst} {
     (if {(zero? n) empty}
-        {(empty lst) empty}
+        {(empty? lst) empty}
         {else (cons (first lst) (first-n (- n 1) (rest lst)))})
 })
 
 (def {prefixes-helper n lst} {
     (if {(zero? n) empty}
-        {(empty lst) empty}
+        {(empty? lst) empty}
         {else (cons (first-n n lst) (prefixes-helper (- n 1) lst))})
 })
 
@@ -165,8 +185,8 @@
     (prefixes-helper (length lst) lst)
 })
 
-(def {sequences lst} {
-    (if {(empty lst) empty}
+(def {subsequences lst} {
+    (if {(empty? lst) empty}
         {else (join (prefixes lst) (subsequences (rest lst)))})
 })
 
@@ -179,36 +199,38 @@
 })
 
 (def {double-hand hand} {
-    (if {(empty hand) empty}
+    (if {(empty? hand) empty}
         {else (cons (first hand) (cons (first hand) (double-hand (rest hand))))})
 })
 
 (def {double-hands hands} {
-    (if {(empty hands) empty}
+    (if {(empty? hands) empty}
         {else (cons (double-hand (first hands)) (double-hands (rest hands)))})
 })
 
-(def {straight-paris hand} {
+(def {straight-pairs hand} {
     (double-hands (straights-of-length 3 (find-kind 2 hand)))
 })
 
 (def {triple-hand hand} {
-    (if {(empty hand) empty}
+    (if {(empty? hand) empty}
         {else (cons (first hand) (cons (first hand) (cons (first hand) (triple-hand (rest hand)))))})
 })
 
 (def {triple-hands hands} {
-    (if {(empty hands) empty}
+    (if {(empty? hands) empty}
         {else (cons (triple-hand (first hands)) (triple-hands (rest hands)))})
 })
 
 (def {airplanes hand} {
-    (triple-hands (straight-of-length 2 (find-kind 3 hand)))
+    (triple-hands (straights-of-length 2 (find-kind 3 hand)))
 })
 
 (def {bombs hand} {
-    (if {(or (empty hand) (empty? (rest hand))
-             (empty (rest (rest hand))) (empty? (rest (rest (rest hand))))) empty}
+    (if {(empty? hand) empty}
+        {(empty? (rest hand)) empty}
+        {(empty? (rest (rest hand))) empty}
+        {(empty? (rest (rest (rest hand)))) empty}
         {(and (eq? (first hand) (first (rest hand)))
               (eq? (first hand) (first (rest (rest hand))))
               (eq? (first hand) (first (rest (rest (rest hand))))))
@@ -218,50 +240,38 @@
 })
 
 (def {rockets hand} {
-    (if {(or (empty hand) (empty (rest hand))) empty}
-        {(and (eq? "Black" (first hand)) (eq? "Red" (second hand))) {{"Black" "Red"}}}
+    (if {(empty? hand) empty}
+        {(empty? (rest hand)) empty}
+        {(and (eq? 'Black (first hand)) (eq? 'Red (second hand))) {{'Black 'Red}}}
         {else (rockets (rest hand))})
 })
 
 (def {beats-r? hand1 hand2} {
-    (if {(or (empty hand1) (empty hand2)) 0}
-        {(and (empty (rest hand1)) (empty (rest hand2))) (card<? (first hand1) (first hand2))}
+    (if {(or (empty? hand1) (empty? hand2)) 0}
+        {(and (empty? (rest hand1)) (empty? (rest hand2))) (card<? (first hand1) (first hand2))}
         {(or (empty? (rest hand1)) (empty? (rest hand2))) 0}
         {else (and (card<? (first hand1) (first hand2))
-                   (= (- (card-value (second hand1)) (card-value (first hand1)))
+                   (eq? (- (card-value (second hand1)) (card-value (first hand1)))
                       (- (card-value (second hand2)) (card-value (first hand2))))
                    (beats-r? (rest hand1) (rest hand2)))})
 })
 
 (def {beats? hand1 hand2} {
-    (if {(empty hand1) (not (empty hand2))}
-    {(empty hand2) 0}
-    {(rocket? hand1) 0}
-    {(rocket? hand2) 1}
-    {(bomb? hand2) (not (bomb? hand1))}
-    {else (beats-r? hand1 hand2)})
+    (if {(empty? hand1) (not (empty? hand2))}
+        {(empty? hand2) 0}
+        {(rocket? hand1) 0}
+        {(rocket? hand2) 1}
+        {(bomb? hand2) (not (bomb? hand1))}
+        {else (beats-r? hand1 hand2)})
 })
 
 (def {all-hands holding} {
-    (sort-hands (join
-               (solos holding)
-               (join
-                (straights holding)
-                (join
-                 (pairs holding)
-                 (join
-                  (straight-pairs holding)
-                  (join
-                   (trios holding)
-                   (join
-                    (airplanes holding)
-                    (join
-                     (bombs holding)
-                     (rockets holding)))))))))
+    (sort-hands (join (solos holding) (straights holding) (pairs holding) (straight-pairs holding)
+                      (trios holding) (airplanes holding) (bombs holding) (rockets holding)))
 })
 
 (def {filter-hands previous hands} {
-    (if {(empty hands) empty}
+    (if {(empty? hands) empty}
         {(beats? previous (first hands)) (cons (first hands) (filter-hands previous (rest hands)))}
         {else (filter-hands previous (rest hands))})
 })
@@ -269,35 +279,75 @@
 (def {follow previous holding} {
     (filter-hands previous (all-hands holding))
 })
-
+        
 (def {both-passed played} {
-    (and (not (empty played)) (empty (first played))
-       (not (empty (rest played))) (empty (first (rest played))))
+    (and (not (empty? played)) (empty? (first played))
+       (not (empty? (rest played))) (empty? (second played)))
 })
 
 (def {goldfish hand role played} {
-    (if {((both-passed played) (list (first hand)))}
+    (if {(both-passed played) (list (first hand))}
         {else empty})
 })
 
 (def {hand-to-beat played} {
-    (if {(empty played) empty}
-        {(or (not (empty (first played))) (empty (rest played))) (first played)}
+    (if {(empty? played) empty}
+        {(or (not (empty? (first played))) (empty? (rest played))) (first played)}
         {else (second played)})
 })
 
 (def {cautious hand role played} {
-    (if {(empty (follow (hand-to-beat played) hand)) empty}
+    (if {(empty? (follow (hand-to-beat played) hand)) empty}
         {else (first (follow (hand-to-beat played) hand))})
 })
 
 (def {last lst} {
-    (if {(empty lst) empty}
+    (if {(empty? lst) empty}
         {(empty? (rest lst)) (first lst)}
         {else (last (rest lst))})
 })
 
 (def {reckless hand role played} {
-    (if {(empty (follow (hand-to-beat played) hand)) empty}
+    (if {(empty? (follow (hand-to-beat played) hand)) empty}
         {else (last (follow (hand-to-beat played) hand))})
 })
+
+(def {remove-hand hand remove} {
+    (if {(eq? remove (first hand)) (rest hand)}
+        {else (cons (first hand) (remove-hand (rest hand) remove))})
+})
+
+(def {recurse hand remove} {
+    (if {(empty? remove) hand}
+        {else (recurse (remove-hand hand (first remove)) (rest remove))})
+})
+
+(def {play players hands played} {
+    ((second (first players)) (first hands) (first (first players)) played)
+})
+
+(def {current-player players hands played} {
+    (if {(empty? (first hands)) (first (first players))}
+        {else (current-player 
+                    (join (rest players) (list (first players)))
+                    (join (rest hands) 
+                          (list (recurse (first hands) (play players hands played))))
+                    (join (list (play players hands played)) played))})
+})
+
+(def {doudizhu players hands} {
+    (current-player (list (list 'Landlord (first players)) (list 'Right (second players))
+                          (list 'Left (third players))) hands empty)
+})
+
+(= {hand0} (list 3 3 3 3 4 5 6 7 7 7 9 9 'Jack 'Jack 'Queen 'King 2 2 'Black 'Red))
+(= {hand1} (list 4 4 4 5 5 6 6 7 8 9 10 'Jack 'Queen 'King 'Ace 2 2))
+(= {hand2} (list 5 6 8 8 8 9 10 10 10 'Jack 'Queen 'Queen 'King 'King 'Ace 'Ace 'Ace))
+
+;(print (play (list (list 'Right reckless) (list 'Left goldfish) (list 'Landlord goldfish)) (list hand1 hand2 hand0) (list empty empty)))
+(check-expect (doudizhu (list goldfish goldfish goldfish) (list hand0 hand1 hand2)) 'Left)
+;(print (doudizhu (list goldfish goldfish goldfish) (list hand0 hand1 hand2)))
+(check-expect (doudizhu (list reckless goldfish goldfish) (list hand0 hand1 hand2)) 'Landlord)
+;(print (doudizhu (list reckless goldfish goldfish) (list hand0 hand1 hand2)))
+(check-expect (doudizhu (list cautious reckless goldfish) (list hand0 hand1 hand2)) 'Landlord)
+;(print (doudizhu (list cautious reckless goldfish) (list hand0 hand1 hand2)))
